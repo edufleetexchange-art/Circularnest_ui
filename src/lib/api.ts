@@ -251,7 +251,7 @@ class ApiService {
   }): Promise<{ success: boolean; circulars: any[]; total: number; message?: string }> {
     try {
       console.log('[API] getCircularsWithStorage called with params:', params);
-      const response = await this.api.get('/circulars', { params });
+      const response = await this.api.get('/api/circulars', { params });
       console.log('[API] getCircularsWithStorage response:', response.data);
       return response.data;
     } catch (error: any) {
