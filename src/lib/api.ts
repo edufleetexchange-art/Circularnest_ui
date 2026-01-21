@@ -187,16 +187,30 @@ class ApiService {
     window.URL.revokeObjectURL(url);
   }
 
-  async viewCircular(id: string) {
-    const response = await this.api.get(`/api/circulars/${id}/download`, {
-      responseType: 'blob'
-    });
-    
-    // Open in new window/tab
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    window.open(url, '_blank');
-    setTimeout(() => window.URL.revokeObjectURL(url), 30000);
+async viewCircular(id: string) {
+  const response = await this.api.get(`/api/circulars/${id}/download`, {
+    responseType: 'blob'
+  });
+
+  const contentType =
+    response.headers['content-type'] || 'application/pdf';
+
+  const blob = new Blob([response.data], { type: contentType });
+
+  const url = window.URL.createObjectURL(blob);
+
+  const newWindow = window.open(url, '_blank');
+
+  // Fallback if popup blocked
+  if (!newWindow) {
+    window.location.href = url;
   }
+
+  setTimeout(() => {
+    window.URL.revokeObjectURL(url);
+  }, 30000);
+}
+
 
   // Pending upload endpoints
   async submitPendingUpload(formData: FormData) {
