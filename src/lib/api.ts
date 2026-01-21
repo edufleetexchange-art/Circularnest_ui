@@ -189,27 +189,32 @@ class ApiService {
 
 async viewCircular(id: string) {
   const response = await this.api.get(`/api/circulars/${id}/download`, {
-    responseType: 'blob'
+    responseType: 'blob',
+    validateStatus: () => true // allow handling 401 manually
   });
 
-  const contentType =
-    response.headers['content-type'] || 'application/pdf';
+  const contentType = response.headers['content-type'];
+
+  // 🚨 If backend returned HTML instead of file
+  if (!contentType || contentType.includes('text/html')) {
+    console.warn('View denied: authentication required');
+
+    // Redirect guest users to login
+    window.location.href = '/login';
+    return;
+  }
 
   const blob = new Blob([response.data], { type: contentType });
-
   const url = window.URL.createObjectURL(blob);
 
   const newWindow = window.open(url, '_blank');
-
-  // Fallback if popup blocked
   if (!newWindow) {
     window.location.href = url;
   }
 
-  setTimeout(() => {
-    window.URL.revokeObjectURL(url);
-  }, 30000);
+  setTimeout(() => window.URL.revokeObjectURL(url), 30000);
 }
+
 
 
   // Pending upload endpoints
