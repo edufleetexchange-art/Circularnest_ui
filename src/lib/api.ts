@@ -56,7 +56,10 @@ class ApiService {
     );
   }
 
-  // Auth endpoints
+  // ======================
+  // AUTH
+  // ======================
+
   async signup(data: {
     email: string;
     password: string;
@@ -91,29 +94,15 @@ class ApiService {
     city?: string;
     state?: string;
     pincode?: string;
-  }): Promise<{ success: boolean; user?: any; message?: string }> {
-    try {
-      console.log('Updating profile with data:', data);
-      console.log('API Base URL:', API_BASE_URL);
-      const response = await this.api.put('/auth/profile', data);
-      console.log('Profile update response:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('API updateProfile error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        url: error.response?.config?.url,
-        method: error.response?.config?.method,
-        headers: error.response?.config?.headers
-      });
-      throw error;
-    }
+  }) {
+    const response = await this.api.put('/auth/profile', data);
+    return response.data;
   }
 
-  // Circular endpoints
+  // ======================
+  // CIRCULARS
+  // ======================
+
   async uploadCircular(formData: FormData) {
     const response = await this.api.post('/circulars/upload', formData, {
       headers: {
@@ -123,20 +112,19 @@ class ApiService {
     return response.data;
   }
 
-  async getCirculars(params?: { category?: string; limit?: number; page?: number; status?: string }) {
-    console.log('[API] getCirculars called with params:', params);
-    console.log('[API] Using base URL:', this.api.defaults.baseURL);
-    
+  async getCirculars(params?: {
+    category?: string;
+    limit?: number;
+    page?: number;
+    status?: string;
+  }) {
     const response = await this.api.get('/circulars', { params });
-    
+
     // Check if we got HTML instead of JSON (indicates API not available)
     if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
-      console.error('[API] Received HTML instead of JSON - API backend may not be available');
-      console.error('[API] Response headers:', response.headers);
-      throw new Error('API backend is not responding correctly. Please check server configuration.');
+      throw new Error('API backend is not responding correctly.');
     }
-    
-    console.log('[API] getCirculars response:', response.data);
+
     return response.data;
   }
 
@@ -171,8 +159,7 @@ class ApiService {
     const response = await this.api.get(`/circulars/${id}/download`, {
       responseType: 'blob'
     });
-    
-    // Create download link
+
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -187,14 +174,16 @@ class ApiService {
     const response = await this.api.get(`/circulars/${id}/download`, {
       responseType: 'blob'
     });
-    
-    // Open in new window/tab
+
     const url = window.URL.createObjectURL(new Blob([response.data]));
     window.open(url, '_blank');
     setTimeout(() => window.URL.revokeObjectURL(url), 30000);
   }
 
-  // Pending upload endpoints
+  // ======================
+  // PENDING UPLOADS
+  // ======================
+
   async submitPendingUpload(formData: FormData) {
     const response = await this.api.post('/pending/upload', formData, {
       headers: {
@@ -238,88 +227,10 @@ class ApiService {
     return response.data;
   }
 
-  // Circular methods for Blink Storage URLs
-  async getCircularsWithStorage(params?: { 
-    status?: string; 
-    category?: string; 
-    limit?: number;
-    userId?: string;
-  }): Promise<{ success: boolean; circulars: any[]; total: number; message?: string }> {
-    try {
-      console.log('[API] getCircularsWithStorage called with params:', params);
-      const response = await this.api.get('/circulars', { params });
-      console.log('[API] getCircularsWithStorage response:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('[API] getCircularsWithStorage error:', error);
-      return { success: false, circulars: [], total: 0, message: error.message };
-    }
-  }
+  // ======================
+  // HEALTH
+  // ======================
 
-  async getCircularById(id: string): Promise<{ success: boolean; circular?: any; message?: string }> {
-    try {
-      const response = await this.api.get(`/circulars/${id}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('[API] getCircularById error:', error);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async uploadCircularWithFile(data: {
-    title: string;
-    description?: string;
-    orderDate?: string;
-    category?: string;
-    file: File;
-    status?: 'pending' | 'approved' | 'rejected';
-  }): Promise<{ success: boolean; circular?: any; message?: string }> {
-    try {
-      const formData = new FormData();
-      formData.append('title', data.title);
-      if (data.description) formData.append('description', data.description);
-      if (data.orderDate) formData.append('orderDate', data.orderDate);
-      if (data.category) formData.append('category', data.category);
-      if (data.status) formData.append('status', data.status);
-      formData.append('file', data.file);
-
-      const response = await this.api.post('/circulars/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('[API] uploadCircularWithFile error:', error);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async updateCircularStatusById(
-    id: string,
-    status: 'pending' | 'approved' | 'rejected',
-    reviewNotes?: string
-  ): Promise<{ success: boolean; circular?: any; message?: string }> {
-    try {
-      const response = await this.api.put(`/circulars/${id}/status`, { status, reviewNotes });
-      return response.data;
-    } catch (error: any) {
-      console.error('[API] updateCircularStatusById error:', error);
-      return { success: false, message: error.message };
-    }
-  }
-
-  async deleteCircularById(id: string): Promise<{ success: boolean; message?: string }> {
-    try {
-      const response = await this.api.delete(`/circulars/${id}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('[API] deleteCircularById error:', error);
-      return { success: false, message: error.message };
-    }
-  }
-
-  // Health check
   async healthCheck() {
     const response = await this.api.get('/health');
     return response.data;
